@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Simple Biometric Demo</title>
+</head>
+<body>
+  <h2>Simple Biometric WebAuthn Demo</h2>
+  <input id="username" placeholder="Enter username" />
+  <button onclick="registerUser()">Register</button>
+  <button onclick="loginUser()">Login</button>
+
+  <script>
+    function bufToB64(buf) {
+      return btoa(String.fromCharCode(...new Uint8Array(buf)))
+        .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    }
+
+    function b64ToBuf(b64) {
+      if (!b64) return new Uint8Array();
+      const pad = b64.length % 4 ? '='.repeat(4 - (b64.length % 4)) : '';
+      const binary = atob(b64.replace(/-/g,'+').replace(/_/g,'/') + pad);
+      return Uint8Array.from(binary, c => c.charCodeAt(0));
+    }
+
+    async function registerUser() {
+      const username = document.getElementById('username').value;
+      if (!username) return alert('Enter username');
+
+      const opts = await fetch(`/register-options?username=${username}`).then(r => r.json());
+
+      opts.challenge = b64ToBuf(opts.challenge);
+      opts.user.id = new TextEncoder().encode(username);
+      if (opts.excludeCredentials) {
+        opts.excludeCredentials = opts.excludeCredentials.map(c => ({ ...c, id: b64ToBuf(c.id) }));
+      }
+
+      const cred = await navigator.credentials.create({ publicKey: opts });
+      const attResp = {
+        id: cred.id,
+        rawId: bufToB64(cred.rawId),
+        type: cred.type,
+        response: {
+          attestationObject: bufToB64(cred.response.attestationObject),
+          clientDataJSON: bufToB64(cred.response.clientDataJSON),
+        },
+      };
+
+      const res = await fetch('/register-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, attResp }),
+      }).then(r => r.json());
+
+      alert('Register: ' + JSON.stringify(res));
+    }
+
+    async function loginUser() {
+      const username = document.getElementById('username').value;
+      if (!username) return alert('Enter username');
+
+      const opts = await fetch(`/login-options?username=${username}`).then(r => r.json());
+      opts.challenge = b64ToBuf(opts.challenge);
+      if (opts.allowCredentials) {
+        opts.allowCredentials = opts.allowCredentials.map(c => ({ ...c, id: b64ToBuf(c.id) }));
+      }
+
+      const cred = await navigator.credentials.get({ publicKey: opts });
+      const authResp = {
+        id: cred.id,
+        rawId: bufToB64(cred.rawId),
+        type: cred.type,
+        response: {
+          authenticatorData: bufToB64(cred.response.authenticatorData),
+          clientDataJSON: bufToB64(cred.response.clientDataJSON),
+          signature: bufToB64(cred.response.signature),
+          userHandle: cred.response.userHandle ? bufToB64(cred.response.userHandle) : null,
+        },
+      };
+
+      const res = await fetch('/login-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, authResp }),
+      }).then(r => r.json());
+
+      alert('Login: ' + JSON.stringify(res));
+    }
+  </script>
+</body>
+</html>
