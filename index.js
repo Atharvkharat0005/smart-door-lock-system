@@ -27,13 +27,17 @@ app.get("/sendmessage",(req,res)=>{
     let name = req.query.name;
     let date = new Date(Date.now());
 
-    createMessage(`
+    try {
+        createMessage(`
         ${date.toDateString()}
             ${name} has entered to the room on the date ${date.toDateString()}
 
         `)
+        res.send("pass");
 
-    res.send("pass");
+    } catch (error) {
+        res.send(JSON.stringify(error));
+    }
 })
 
 app.get("/",(req,res)=>{
