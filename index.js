@@ -21,14 +21,14 @@ async function createMessage(data) {
 }
 
 
-app.get("/sendmessage",(req,res)=>{
+app.get("/sendmessage",async (req,res)=>{
     // createMessage();
 
     let name = req.query.name;
     let date = new Date(Date.now());
 
     try {
-        createMessage(`
+        await createMessage(`
         ${date.toDateString()}
             ${name} has entered to the room on the date ${date.toDateString()}
 
