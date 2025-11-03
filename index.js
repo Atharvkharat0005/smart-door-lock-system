@@ -14,7 +14,7 @@ async function createMessage(data) {
   const message = await client.messages.create({
     body: data,
     from: "+12183221315",
-    to: "+919529960309",
+    to: "+918767918092",
   });
 
   console.log(message.body);
