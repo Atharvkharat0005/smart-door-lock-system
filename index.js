@@ -17,7 +17,7 @@ async function createMessage(data) {
     to: "+918767918092",
   });
 
-  console.log(message.body);
+  return (message.body);
 }
 
 
@@ -28,12 +28,12 @@ app.get("/sendmessage",async (req,res)=>{
     let date = new Date(Date.now());
 
     try {
-        await createMessage(`
+        let resp = await createMessage(`
         ${date.toDateString()}
             ${name} has entered to the room on the date ${date.toDateString()}
 
         `)
-        res.send("pass");
+        res.send(JSON.stringify(resp));
 
     } catch (error) {
         res.send(JSON.stringify(error));
